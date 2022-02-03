@@ -1,21 +1,39 @@
-import { Button } from '@mui/material';
-import { FC } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { CircularProgress } from '@mui/material';
+import React, { FC, useEffect, useState } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
+import getHolidays, { IHoliday } from '../../api/getHolidays';
 
 const CountryHolidays: FC = () => {
-  const params = useParams();
-  const navigate = useNavigate();
+  const [holidays, setHolidays] = useState<IHoliday[] | null>(null);
+  const { countryCode } = useParams();
+  const location = useLocation();
 
-  const handleOnClick = () => {
-    navigate(`/countries/${params.countryCode}`);
+  const searchParams = new URLSearchParams(location.search);
+  const dateAsString = searchParams.get('date');
+
+  const fetchHolidays = async () => {
+    const date = dateAsString
+      ? new Date(dateAsString)
+      : new Date();
+
+    const newHolidays = await getHolidays(countryCode!, date.getFullYear());
+
+    setHolidays(newHolidays);
   };
+
+  useEffect(() => {
+    fetchHolidays();
+  }, []);
 
   return (
     <div>
-      Country Holidays: {params.countryCode}
+      {!holidays && <CircularProgress color="secondary" />}
 
-      <Link to="/">Go To Home</Link>
-      <Button onClick={handleOnClick}>Go To Country Info Page</Button>
+      {holidays && holidays.map((info) => (
+        <div key={`${info.name}${info.date}`}>
+          {info.localName}({info.name}) - {info.date}
+        </div>
+      ))}
     </div>
   );
 };
